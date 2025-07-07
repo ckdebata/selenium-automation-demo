@@ -2,52 +2,35 @@ name: Scheduled Selenium Tests with Email Notification
 
 on:
   schedule:
-    - cron: "50 1 * * *"   # Runs daily at 01:50 AM UTC
-  workflow_dispatch:       # Allows manual trigger from GitHub UI
+    - cron: '20 20 * * *'  # Runs every day at 8:20 PM UTC (adjust to 1:50 AM your time zone)
+  workflow_dispatch:       # Optional: allows manual runs
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install selenium pytest pytest-html
+          pip install -r requirements.txt
+          pip install pytest pytest-html selenium webdriver-manager
 
-      - name: Run tests and generate HTML report
+      - name: Run tests
         run: |
-          pytest tests/test_login.py --html=report.html
+          mkdir -p reports
+          pytest tests/test_login.py --html=reports/report.html
 
-      - name: Upload test report artifact
-      - uses: actions/upload-artifact@v4
-      with:
-          name: Test Report
-          path: report.html
-
-  notify:
-    needs: test
-    runs-on: ubuntu-latest
-    if: success()  # Only send email if tests passed
-
-    steps:
-      - name: Send email notification
-        uses: dawidd6/action-send-mail@v3
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
         with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Selenium Tests Passed ✅"
-          body: "Your scheduled Selenium tests have successfully passed. Check GitHub Actions for details."
-          to: chanduckd10@gmail.com
-          from: ${{ secrets.EMAIL_USERNAME }}
-          secure: true
+          name: selenium-test-report
+          path: reports/report.html
